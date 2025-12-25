@@ -91,7 +91,7 @@ dmypy.json
 *.zip
 *.tar.gz
 *.tgz
-data/
+/data/
 checkpoints/
 *.pth
 *.pt
