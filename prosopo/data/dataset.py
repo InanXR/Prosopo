@@ -96,17 +96,18 @@ class CASIAWebFaceDataset(Dataset):
         # Load image
         image = Image.open(img_path).convert('RGB')
         
-        # Apply transforms (supports both torchvision and albumentations)
+        # Apply transforms
         if self.transform is not None:
-            # Check if it's albumentations (expects dict with 'image' key)
-            if hasattr(self.transform, 'transforms'):
-                # Albumentations compose
+            # Try torchvision style first (transform takes PIL image directly)
+            # Albumentations requires transform(image=np.array)
+            try:
+                # Torchvision: transform(pil_image) -> tensor
+                image = self.transform(image)
+            except TypeError:
+                # Albumentations: transform(image=np_array) -> dict
                 image = np.array(image)
                 transformed = self.transform(image=image)
                 image = transformed['image']
-            else:
-                # Torchvision transforms (works on PIL images directly)
-                image = self.transform(image)
         
         return image, label
     
