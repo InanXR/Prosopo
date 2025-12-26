@@ -10,3 +10,4 @@ pyyaml>=6.0
 matplotlib>=3.7.0
 facenet-pytorch>=2.5.0
 opencv-python>=4.8.0
+wandb>=0.15.0

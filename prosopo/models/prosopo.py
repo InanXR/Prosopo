@@ -6,15 +6,17 @@ import torch.nn.functional as F
 from torch import Tensor
 
 from .backbone import BackboneWithEmbedding
-from .arcface import ArcFaceHead
+from .arcface import AdaFaceHead
 
 
 class Prosopo(nn.Module):
     """
-    Prosopo: Face embedding model with ArcFace training head.
+    Prosopo: Face embedding model with AdaFace training head.
     
-    During training: returns logits for cross-entropy loss
-    During inference: returns normalized embeddings for similarity search
+    Features:
+        - IR-SE-50 Backbone
+        - AdaFace Loss
+        - Test-Time Augmentation (TTA)
     """
     
     def __init__(
@@ -25,6 +27,7 @@ class Prosopo(nn.Module):
         pretrained: bool = True,
         arcface_scale: float = 64.0,
         arcface_margin: float = 0.5,
+        easy_margin: bool = False,
     ):
         """
         Args:
@@ -37,19 +40,20 @@ class Prosopo(nn.Module):
         """
         super().__init__()
         
-        # Feature extraction backbone
+        # Feature extraction backbone (Configured as IR-SE-50 internally)
         self.backbone = BackboneWithEmbedding(
             backbone_name=backbone,
             embedding_dim=embedding_dim,
             pretrained=pretrained,
         )
         
-        # ArcFace classification head (used only during training)
-        self.arcface = ArcFaceHead(
+        # AdaFace classification head (Renamed from arcface for clarity, but keeping attr name)
+        self.arcface = AdaFaceHead(
             embedding_dim=embedding_dim,
             num_classes=num_classes,
             scale=arcface_scale,
             margin=arcface_margin,
+            easy_margin=easy_margin,
         )
         
         self.embedding_dim = embedding_dim
@@ -61,29 +65,40 @@ class Prosopo(nn.Module):
     ) -> Tensor:
         """
         Forward pass.
-        
-        Args:
-            x: (batch, 3, 112, 112) input face images
-            labels: (batch,) integer labels (required for training)
-            
-        Returns:
-            Training (labels provided): (batch, num_classes) logits
-            Inference (no labels): (batch, embedding_dim) normalized embeddings
         """
-        # Extract embeddings
+        # Extract embeddings (Un-normalized for AdaFace use)
         embeddings = self.backbone(x)
         
         if labels is not None:
-            # Training mode: return logits for cross-entropy
+            # Training mode: return logits
+            # AdaFace handles normalization internally to compute quality norms
             logits = self.arcface(embeddings, labels)
             return logits
         else:
             # Inference mode: return normalized embeddings
             return F.normalize(embeddings, p=2, dim=1)
     
-    def get_embedding(self, x: Tensor) -> Tensor:
-        """Extract normalized embedding for inference."""
-        embeddings = self.backbone(x)
+    def get_embedding(self, x: Tensor, tta: bool = True) -> Tensor:
+        """
+        Extract normalized embedding for inference.
+        
+        Args:
+            x: Input image tensor
+            tta: Use Test-Time Augmentation (Horizontal Flip)
+        """
+        if tta:
+            # Original
+            emb1 = self.backbone(x)
+            
+            # Flipped
+            x_flip = torch.flip(x, dims=[3])
+            emb2 = self.backbone(x_flip)
+            
+            # Average (sum since we normalize after)
+            embeddings = emb1 + emb2
+        else:
+            embeddings = self.backbone(x)
+            
         return F.normalize(embeddings, p=2, dim=1)
     
     @torch.no_grad()

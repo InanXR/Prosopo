@@ -98,16 +98,10 @@ class CASIAWebFaceDataset(Dataset):
         
         # Apply transforms
         if self.transform is not None:
-            # Try torchvision style first (transform takes PIL image directly)
-            # Albumentations requires transform(image=np.array)
-            try:
-                # Torchvision: transform(pil_image) -> tensor
-                image = self.transform(image)
-            except TypeError:
-                # Albumentations: transform(image=np_array) -> dict
-                image = np.array(image)
-                transformed = self.transform(image=image)
-                image = transformed['image']
+            # Albumentations: transform(image=np_array) -> dict
+            image = np.array(image)
+            transformed = self.transform(image=image)
+            image = transformed['image']
         
         return image, label
     

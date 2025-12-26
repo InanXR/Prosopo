@@ -1,6 +1,5 @@
 """LFW (Labeled Faces in the Wild) dataset for evaluation."""
 
-import os
 from pathlib import Path
 from typing import Optional, Callable, List, Tuple
 

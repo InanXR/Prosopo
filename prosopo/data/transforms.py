@@ -4,9 +4,9 @@ import albumentations as A
 from albumentations.pytorch import ToTensorV2
 
 
-# Face-specific normalization (0.5, 0.5, 0.5)
-FACE_MEAN = (0.5, 0.5, 0.5)
-FACE_STD = (0.5, 0.5, 0.5)
+# Face-specific normalization (ImageNet stats for pretrained model)
+FACE_MEAN = (0.485, 0.456, 0.406)
+FACE_STD = (0.229, 0.224, 0.225)
 
 
 def get_train_transforms(image_size: int = 112) -> A.Compose:
@@ -21,6 +21,7 @@ def get_train_transforms(image_size: int = 112) -> A.Compose:
         - Normalization
     """
     return A.Compose([
+        A.Resize(image_size, image_size),
         A.HorizontalFlip(p=0.5),
         A.ColorJitter(
             brightness=0.2,
