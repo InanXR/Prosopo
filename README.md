@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/Prosopo_Banner_21.9.png" alt="Prosopo Dataset Banner" width="100%">
+</p>
+
 # Prosopo
 
 > A face embedding model trained from scratch using ArcFace loss.
